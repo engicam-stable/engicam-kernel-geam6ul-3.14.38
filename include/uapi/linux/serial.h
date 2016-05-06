@@ -114,6 +114,9 @@ struct serial_rs485 {
 #define SER_RS485_RTS_ON_SEND		(1 << 1)	/* Logical level for
 							   RTS pin when
 							   sending */
+
+#define SER_RS485_RTS_BEFORE_SEND	(1 << 3)	
+
 #define SER_RS485_RTS_AFTER_SEND	(1 << 2)	/* Logical level for
 							   RTS pin after sent*/
 #define SER_RS485_RX_DURING_TX		(1 << 4)

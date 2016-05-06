@@ -249,6 +249,8 @@ struct imx_port {
 	struct work_struct	tsk_dma_rx;
 	wait_queue_head_t	dma_wait;
 	unsigned int            saved_reg[10];
+	struct serial_rs485     rs485;
+
 #define DMA_TX_IS_WORKING 1
 	unsigned long		flags;
 };
@@ -264,6 +266,29 @@ struct imx_port_ucrs {
 #else
 #define USE_IRDA(sport)	(0)
 #endif
+
+
+static inline void imx_rs485_switch_to_tx(struct imx_port *sport) {
+       writel(readl(sport->port.membase + UCR2) & ~UCR2_CTS,
+	         sport->port.membase + UCR2);
+}
+
+static inline void imx_rs485_switch_to_rx(struct imx_port *sport) {
+      writel(readl(sport->port.membase + UCR2) | UCR2_CTS,
+	sport->port.membase + UCR2);
+}
+
+static inline void imx_rs485_config(struct imx_port *sport) {
+       if (sport->have_rtscts) {
+               writel(readl(sport->port.membase + UCR2) & ~UCR2_CTSC,
+                      sport->port.membase + UCR2);
+               imx_rs485_switch_to_rx(sport);
+       } else
+               sport->rs485.flags &= ~SER_RS485_ENABLED;
+}
+
+
+
 
 static struct imx_uart_data imx_uart_devdata[] = {
 	[IMX1_UART] = {
@@ -398,6 +423,22 @@ static void imx_stop_tx(struct uart_port *port)
 {
 	struct imx_port *sport = (struct imx_port *)port;
 	unsigned long temp;
+
+	if (readl(sport->port.membase + USR2) & USR2_TXDC) {
+	    if (sport->rs485.flags & SER_RS485_ENABLED)
+	    {
+		int n = 256;
+		while ((--n > 0) &&
+		      !(readl(sport->port.membase + USR2) & USR2_TXDC)) {
+			udelay(5);
+			barrier();
+		}		
+		imx_rs485_switch_to_rx(sport);
+	    }
+	    writel(readl(sport->port.membase + UCR4) & ~UCR4_TCEN,
+		sport->port.membase + UCR4);
+	}
+
 
 	if (USE_IRDA(sport)) {
 		/* half duplex - wait for end of transmission */
@@ -642,13 +683,23 @@ static void imx_start_tx(struct uart_port *port)
 		writel(temp, sport->port.membase + UCR4);
 	}
 
+
+	if (sport->rs485.flags & SER_RS485_ENABLED) {
+               writel(readl(sport->port.membase + UCR4) | UCR4_TCEN,
+                      sport->port.membase + UCR4);
+               imx_rs485_switch_to_tx(sport);
+       	}
+
+
+	if (readl(sport->port.membase + uts_reg(sport)) & UTS_TXEMPTY)
+		imx_transmit_buffer(sport);
+
+
 	if (sport->dma_is_enabled) {
 		schedule_delayed_work(&sport->tsk_dma_tx, 0);
 		return;
 	}
 
-	if (readl(sport->port.membase + uts_reg(sport)) & UTS_TXEMPTY)
-		imx_transmit_buffer(sport);
 }
 
 static irqreturn_t imx_rtsint(int irq, void *dev_id)
@@ -767,6 +818,12 @@ static irqreturn_t imx_int(int irq, void *dev_id)
 	struct imx_port *sport = dev_id;
 	unsigned int sts;
 	unsigned int sts2;
+
+
+	if (readl(sport->port.membase + USR2) & USR2_TXDC &&
+           readl(sport->port.membase + UCR4) & UCR4_TCEN) {
+               imx_txint(irq, dev_id);
+       	}
 
 	sts = readl(sport->port.membase + USR1);
 
@@ -1577,6 +1634,9 @@ imx_set_termios(struct uart_port *port, struct ktermios *termios,
 	/* set the parity, stop bits and data size */
 	writel(ucr2 | old_txrxen, sport->port.membase + UCR2);
 
+          if (sport->rs485.flags & SER_RS485_ENABLED)
+               imx_rs485_config(sport);
+
 	if (UART_ENABLE_MS(&sport->port, termios->c_cflag))
 		imx_enable_ms(&sport->port);
 
@@ -1591,6 +1651,31 @@ imx_set_termios(struct uart_port *port, struct ktermios *termios,
 	}
 
 	spin_unlock_irqrestore(&sport->port.lock, flags);
+}
+
+static int imx_ioctl(struct uart_port *port, unsigned int cmd, unsigned long arg)
+{
+       struct imx_port *sport = (struct imx_port *)port;
+
+       switch (cmd) {
+       case TIOCSRS485:
+               if (copy_from_user(&(sport->rs485), (struct serial_rs485 *) arg,
+                                       sizeof(struct serial_rs485)))
+                       return -EFAULT;
+               if (sport->rs485.flags & SER_RS485_ENABLED)
+                       imx_rs485_config(sport);
+               break;
+
+       case TIOCGRS485:
+               if (copy_to_user((struct serial_rs485 *) arg, &(sport->rs485),
+                                       sizeof(struct serial_rs485)))
+                       return -EFAULT;
+               break;
+
+       default:
+               return -ENOIOCTLCMD;
+       }
+       return 0;
 }
 
 static const char *imx_type(struct uart_port *port)
@@ -1715,6 +1800,7 @@ static struct uart_ops imx_pops = {
 	.startup	= imx_startup,
 	.shutdown	= imx_shutdown,
 	.flush_buffer	= imx_flush_buffer,
+	.ioctl          = imx_ioctl,
 	.set_termios	= imx_set_termios,
 	.type		= imx_type,
 	.config_port	= imx_config_port,
