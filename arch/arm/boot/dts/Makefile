@@ -228,6 +228,7 @@ dtb-$(CONFIG_ARCH_MXC) += \
 	imx6ul-14x14-evk-csi.dtb \
 	imx6ul-gea.dtb \
 	imx6ul-gea-lococap-7.dtb \
+	imx6ul-gea-loco43.dtb \
 	vf610-cosmic.dtb \
 	imx6sx-sdb-emmc.dtb \
 	imx6sx-sdb-m4.dtb \
