@@ -467,6 +467,8 @@
 #define IMX6SX_GPR12_RX_EQ_2			(0x2 << 0)
 
 /* For imx6ul iomux gpr register field define */
+#define IMX6UL_GPR1_SAI2_CLK_DIR		(0x1 << 20)
+#define IMX6UL_GPR1_SAI2_CLK_OUTPUT		(0x1 << 20)
 #define IMX6UL_GPR1_ENET1_CLK_DIR		(0x1 << 17)
 #define IMX6UL_GPR1_ENET2_CLK_DIR		(0x1 << 18)
 #define IMX6UL_GPR1_ENET1_CLK_OUTPUT		(0x1 << 17)

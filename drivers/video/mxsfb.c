@@ -39,6 +39,7 @@
  * the required value in the imx_fb_videomode structure.
  */
 
+#define DEBUG
 #include <linux/busfreq-imx.h>
 #include <linux/console.h>
 #include <linux/module.h>
@@ -1264,6 +1265,7 @@ static int mxsfb_map_videomem(struct fb_info *fbi)
 		fbi->fix.smem_len = fbi->var.yres_virtual *
 				    fbi->fix.line_length;
 
+	printk("fbi->fix.smem_len = %d\n", fbi->fix.smem_len);
 	fbi->screen_base = dma_alloc_writecombine(fbi->device,
 				fbi->fix.smem_len,
 				(dma_addr_t *)&fbi->fix.smem_start,
