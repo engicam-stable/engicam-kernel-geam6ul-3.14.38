@@ -1051,7 +1051,9 @@ printk("MP: %s %d\n",__FUNCTION__,__LINE__);
 	input_set_abs_params(input, ABS_MT_POSITION_Y,
 			     0, tsdata->num_y * 64 - 1, 0, 0);
 */
-printk("MP: x_max %d y_max %d\n",tsdata->x_max,tsdata->y_max);
+
+	input_set_abs_params(input, ABS_X, 0, 800, 0, 0);
+	input_set_abs_params(input, ABS_Y, 0, 480, 0, 0);
 	input_set_abs_params(input, ABS_MT_POSITION_X, 0, tsdata->x_max, 0, 0);
 	input_set_abs_params(input, ABS_MT_POSITION_Y, 0, tsdata->y_max, 0, 0);
 
