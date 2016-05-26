@@ -285,6 +285,11 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c1>;
 	status = "okay";
+
+	pcf8563: rtc@51 {
+  		compatible = "pcf8563";
+  		reg = <0x51>;
+ 	};
 };
 
 &i2c2 {
