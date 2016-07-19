@@ -23,6 +23,17 @@
 		reg = <0x80000000 0x20000000>;
 	};
 
+	gpio_export {
+		compatible = "gpio-export";
+		#size-cells = <0>;
+		GPIO_DL2 {
+		        gpio-export,name = "GPIO_DL2";
+			gpio-export,output = <1>;
+                        gpio-export,direction_may_change;
+		        gpios = <&gpio4 16 0>;
+		};
+	};
+
 	backlight {
 		compatible = "pwm-backlight";
 		pwms = <&pwm8 0 100000>;
@@ -308,6 +319,7 @@
 			fsl,pins = <
 				MX6UL_PAD_NAND_CE1_B__GPIO4_IO14	0x17059 /* WF111 reset */
 				MX6UL_PAD_UART1_RTS_B__GPIO1_IO19  0x17059 /*CD sdhc1 */
+				MX6UL_PAD_NAND_DQS__GPIO4_IO16 0x17059 /*LED DL2*/
 			>;
 		};
 

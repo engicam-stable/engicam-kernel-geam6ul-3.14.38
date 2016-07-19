@@ -126,6 +126,12 @@ static inline int gpio_export(unsigned gpio, bool direction_may_change)
 	return gpiod_export(gpio_to_desc(gpio), direction_may_change);
 }
 
+static inline int gpio_export_with_name(unsigned gpio, bool direction_may_change, const char *name) 
+{ 
+        return _gpiod_export(gpio_to_desc(gpio), direction_may_change, name); 
+} 
+
+
 static inline int gpio_export_link(struct device *dev, const char *name,
 				   unsigned gpio)
 {
